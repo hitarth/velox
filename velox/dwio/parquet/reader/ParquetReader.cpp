@@ -277,14 +277,15 @@ std::shared_ptr<const ParquetTypeWithId> ReaderBase::getParquetColumnInfo(
           VELOX_CHECK_EQ(children.size(), 1);
 
           const auto& child = children[0];
-          auto grandChildren = child->getChildren();
+          auto childrenForCurrentElement = child->getChildren();
           auto currentElementType = child->type();
           if (child->type()->kind() == TypeKind::MAP) {
             currentElementType = TypeFactory<TypeKind::ARRAY>::create(child->type());
+            childrenForCurrentElement = children;
           }
           return std::make_shared<const ParquetTypeWithId>(
               currentElementType,
-              std::move(grandChildren),
+              std::move(childrenForCurrentElement),
               curSchemaIdx, // TODO: there are holes in the ids
               maxSchemaElementIdx,
               ParquetTypeWithId::kNonLeaf, // columnIdx,
@@ -296,7 +297,7 @@ std::shared_ptr<const ParquetTypeWithId> ReaderBase::getParquetColumnInfo(
               isOptional,
               1);
         }
-        case thrift::ConvertedType::MAP_KEY_VALUE:
+	case thrift::ConvertedType::MAP_KEY_VALUE:
           // If the MAP_KEY_VALUE annotated group's parent is a MAP, it should
           // be the repeated key_value group that directly contains the key and
           // value children.
